@@ -7,54 +7,39 @@ from currency.models import ExchangeRateProvider, ExchangeRate
 
 
 class ProvidersService:
+    def __init__(self, name, api_url):
+        self.name = name
+        self.api_url = api_url
 
-    @staticmethod
-    def get_provider_by_name(name):
-
-        privat = (
-            ExchangeRateProvider.objects
-            .filter(
-                name=name
-            )
-            .first()
-        )
-
-        return privat
-
-    def create_provider(self, data):
-
-        provider = (
-            ExchangeRateProvider.objects
-            .filter(
-                name=data["name"]
-            )
-            .first()
-        )
-
-        if not provider:
-            provider = ExchangeRateProvider(
-                name=data["name"],
-                api_url=data["api_url"]
-            )
-            provider.save()
+    def get_or_create(self):
+        provider, created = ExchangeRateProvider.objects.get_or_create(name=self.name, api_url=self.api_url)
+        if created:
+            # The provider was created because it didn't exist
+            print("ExchangeRateProvider created:", provider)
+        else:
+            print("Existing ExchangeRateProvider retrieved:", provider)
 
         return provider
 
 
-class PrivatExchangeRatesService:
+class ExchangeRatesService:
 
     CURRENCIES = ['GBP', 'USD', 'CHF', 'EUR']
+
+    def __init__(self, provider):
+        self.provider = provider
+
+
+class PrivatExchangeRatesService(ExchangeRatesService):
+
     BANK_NAME = 'Privat Bank'
 
     def get_rates(self):
 
-        privat = ProvidersService.get_provider_by_name(self.BANK_NAME)
+        if self.provider.name != self.BANK_NAME:
+            raise ObjectDoesNotExist(f'{self.provider.name} not found in DB')
 
-        if not privat:
-            raise ObjectDoesNotExist(f'{self.BANK_NAME} not found in DB')
-
-        provider_id = privat.id
-        api_url = privat.api_url
+        api_url = self.provider.api_url
         start_date = datetime.datetime(2023, 5, 21)
         end_date = datetime.datetime.now()
         delta = datetime.timedelta(days=1)
@@ -65,9 +50,8 @@ class PrivatExchangeRatesService:
             start_date += delta
 
         sorted_currency_rates = sorted(currency_rates, key=lambda x: x['date'])
-        # print(sorted_currency_rates)
 
-        return sorted_currency_rates, provider_id
+        return sorted_currency_rates
 
     def get_rate(self, date, api_url):
 
@@ -100,8 +84,7 @@ class PrivatExchangeRatesService:
 
     def persist_currency_rates(self, objects):
         currency_rates = []
-        cu_rates, provider_id = objects
-        for cu_rate in cu_rates:
+        for cu_rate in objects:
             check_rate = (
                 ExchangeRate.objects
                 .filter(
@@ -120,7 +103,7 @@ class PrivatExchangeRatesService:
                 buy_rate=cu_rate.get('buy_rate'),
                 sale_rate=cu_rate.get('sale_rate'),
                 date=cu_rate.get('date'),
-                provider_id=provider_id
+                provider_id=self.provider.id
             )
             check_rate.save()
             currency_rates.append(model_to_dict(check_rate))

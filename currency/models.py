@@ -4,6 +4,7 @@ from django.db import models
 class ExchangeRateProvider(models.Model):
     name = models.CharField(max_length=50)
     api_url = models.URLField()
+    # last_request_date = models.CharField(max_length=20)
 
 
 class ExchangeRate(models.Model):
