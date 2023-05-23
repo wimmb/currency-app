@@ -49,7 +49,7 @@ class PrivatExchangeRatesService(ExchangeRatesService):
             raise ObjectDoesNotExist(f'{self.provider.name} not found in DB')
 
         api_url = self.provider.api_url
-        start_date = datetime.datetime(2023, 1, 1)
+        start_date = datetime.datetime(2023, 5, 1)
         end_date = datetime.datetime.now()
         delta = datetime.timedelta(days=1)
 
