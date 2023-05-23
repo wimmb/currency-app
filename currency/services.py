@@ -29,6 +29,15 @@ class ExchangeRatesService:
     def __init__(self, provider):
         self.provider = provider
 
+    def get_rates(self):
+        raise NotImplementedError
+
+    def get_rate(self, date, api_url):
+        raise NotImplementedError
+
+    def persist_currency_rates(self, objects):
+        raise NotImplementedError
+
 
 class PrivatExchangeRatesService(ExchangeRatesService):
 
@@ -40,7 +49,7 @@ class PrivatExchangeRatesService(ExchangeRatesService):
             raise ObjectDoesNotExist(f'{self.provider.name} not found in DB')
 
         api_url = self.provider.api_url
-        start_date = datetime.datetime(2023, 5, 21)
+        start_date = datetime.datetime(2023, 5, 22)
         end_date = datetime.datetime.now()
         delta = datetime.timedelta(days=1)
 

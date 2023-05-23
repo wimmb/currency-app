@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from currency.services import ExchangeRatesService, PrivatExchangeRatesService
+from currency.services import PrivatExchangeRatesService
 from currency.services import ProvidersService
 
 
