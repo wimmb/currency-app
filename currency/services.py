@@ -1,4 +1,7 @@
 import datetime
+import time
+from concurrent.futures import ThreadPoolExecutor
+
 import requests
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -49,14 +52,31 @@ class PrivatExchangeRatesService(ExchangeRatesService):
             raise ObjectDoesNotExist(f'{self.provider.name} not found in DB')
 
         api_url = self.provider.api_url
-        start_date = datetime.datetime(2023, 5, 1)
+        start_date = datetime.datetime(2023, 5, 23)
         end_date = datetime.datetime.now()
         delta = datetime.timedelta(days=1)
 
+        # currency_rates = []
+        # start_time = time.time()
+        # while start_date < end_date:
+        #     currency_rates += self.get_rate(date=start_date, api_url=api_url)
+        #     start_date += delta
+        # end_time = time.time()
+        # print(f'Time {end_time - start_time} sec.')
+
         currency_rates = []
-        while start_date < end_date:
-            currency_rates += self.get_rate(date=start_date, api_url=api_url)
-            start_date += delta
+        start_time = time.time()
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = []
+            while start_date < end_date:
+                futures.append(executor.submit(self.get_rate, start_date, api_url))
+                start_date += delta
+
+            for future in futures:
+                currency_rates += future.result()
+
+        end_time = time.time()
+        print(f'Time {end_time - start_time} sec.')
 
         sorted_currency_rates = sorted(currency_rates, key=lambda x: x['date'])
 
