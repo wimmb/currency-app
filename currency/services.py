@@ -52,7 +52,7 @@ class PrivatExchangeRatesService(ExchangeRatesService):
             raise ObjectDoesNotExist(f'{self.provider.name} not found in DB')
 
         api_url = self.provider.api_url
-        start_date = datetime.datetime(2023, 5, 23)
+        start_date = datetime.datetime(2023, 5, 20)
         end_date = datetime.datetime.now()
         delta = datetime.timedelta(days=1)
 
@@ -113,28 +113,20 @@ class PrivatExchangeRatesService(ExchangeRatesService):
 
     def persist_currency_rates(self, objects):
         currency_rates = []
+
         for cu_rate in objects:
-            check_rate = (
-                ExchangeRate.objects
-                .filter(
-                    currency=cu_rate.get('currency'),
-                    date=cu_rate.get('date')
-                )
-                .first()
-            )
-
-            if check_rate:
-                continue
-
-            check_rate = ExchangeRate(
-                base_currency=cu_rate.get('base_currency'),
+            rate, created = ExchangeRate.objects.get_or_create(
                 currency=cu_rate.get('currency'),
-                buy_rate=cu_rate.get('buy_rate'),
-                sale_rate=cu_rate.get('sale_rate'),
                 date=cu_rate.get('date'),
-                provider_id=self.provider.id
+                defaults={
+                    'base_currency': cu_rate.get('base_currency'),
+                    'buy_rate': cu_rate.get('buy_rate'),
+                    'sale_rate': cu_rate.get('sale_rate'),
+                    'provider_id': self.provider.pk
+                }
             )
-            check_rate.save()
-            currency_rates.append(model_to_dict(check_rate))
+
+            if created:
+                currency_rates.append(model_to_dict(rate))
 
         return currency_rates
